@@ -3,427 +3,656 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Fleet Manager Pro - v18.0</title>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&family=Roboto+Mono:wght@500&display=swap" rel="stylesheet">
+    <title>Fleet Manager Pro - v47.0</title>
+    
+    <script>
+        // ★連携用URL
+        const API_URL = "https://script.google.com/macros/s/AKfycbxeLEiKGP2Gn1142ic8Nug_UIOvbkJeNqonghmNZFuGmOHs8u18A3E3B0PJbqvEfhpi/exec"; 
+    </script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&family=Roboto+Mono:wght@500&display=swap" rel="stylesheet">
     <style>
-        /* --- デザイン変数 (Cyber Dark Theme) --- */
+        /* --- Styles (v44ベース) --- */
         :root {
-            --bg-gradient: linear-gradient(-45deg, #0f172a, #1e3a8a, #111827, #000000);
-            --glass-bg: rgba(255, 255, 255, 0.05);
-            --glass-border: rgba(255, 255, 255, 0.1);
-            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
-            --neon-blue: #3b82f6; --neon-green: #10b981; --neon-red: #ef4444; --neon-orange: #f59e0b;
-            --text-main: #ffffff; --text-sub: #9ca3af;
+            --sidebar-bg: #111827; --sidebar-hover: rgba(255,255,255,0.1);
+            --main-bg: #F3F4F6; --card-bg: #FFFFFF;
+            --status-running: #10B981; --status-stop: #6B7280;
+            --alert-critical: #EF4444; --alert-warning: #F59E0B;
+            --primary-blue: #2563EB; --text-primary: #1F2937; --text-secondary: #6B7280; --border-color: #E5E7EB;
         }
-        /* 全体設定 */
-        body {
-            font-family: 'Noto Sans JP', sans-serif; margin: 0; color: var(--text-main); height: 100vh; overflow: hidden;
-            background: var(--bg-gradient); background-size: 400% 400%; animation: gradientBG 15s ease infinite;
-        }
-        @keyframes gradientBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        body { font-family: 'Noto Sans JP', sans-serif; background-color: var(--main-bg); margin: 0; color: var(--text-primary); height: 100vh; overflow: hidden; display: flex; }
         .hidden { display: none !important; }
-        button { cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent; font-family: 'Noto Sans JP', sans-serif; }
+        button { cursor: pointer; user-select: none; font-family: 'Noto Sans JP', sans-serif; }
 
-        /* --- SVGアイコン用スタイル --- */
-        .icon { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-        .icon-glow-blue { color: var(--neon-blue); filter: drop-shadow(0 0 5px var(--neon-blue)); }
-        .icon-glow-green { color: var(--neon-green); filter: drop-shadow(0 0 5px var(--neon-green)); }
-        .icon-glow-red { color: var(--neon-red); filter: drop-shadow(0 0 5px var(--neon-red)); }
-        .btn-icon { margin-right: 8px; }
+        /* Loader */
+        #loader { position: fixed; inset: 0; background: rgba(255,255,255,0.9); z-index: 2000; display: flex; justify-content: center; align-items: center; flex-direction: column; color: var(--primary-blue); }
+        .spinner { width: 40px; height: 40px; border: 4px solid #e5e7eb; border-top-color: var(--primary-blue); border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* --- 1. ログイン画面 (英語維持) --- */
-        #screen-login { position: fixed; inset: 0; z-index: 999; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
-        .login-glass-card { background: var(--glass-bg); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid var(--glass-border); border-radius: 20px; padding: 40px; width: 90%; max-width: 350px; box-shadow: var(--glass-shadow); text-align: center; }
-        .app-title { font-family: 'Orbitron', sans-serif; font-size: 2rem; margin-bottom: 10px; background: linear-gradient(90deg, #fff, #3b82f6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-shadow: 0 0 20px rgba(59, 130, 246, 0.5); }
+        /* Login */
+        #screen-login { position: fixed; inset: 0; background: var(--main-bg); z-index: 999; display: flex; justify-content: center; align-items: center; }
+        .login-box { background: white; padding: 40px; border-radius: 12px; width: 320px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        .login-input { width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 6px; box-sizing: border-box; margin-bottom: 15px; }
         
-        /* アイコン付き入力欄 */
-        .input-wrapper { position: relative; margin-bottom: 15px; }
-        .input-icon-pos { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--text-sub); transition: 0.3s; }
-        .login-input { width: 100%; padding: 15px 15px 15px 45px; background: rgba(0, 0, 0, 0.3); border: 1px solid var(--glass-border); border-radius: 8px; color: white; font-size: 1rem; box-sizing: border-box; transition: 0.3s; }
-        .login-input:focus { outline: none; border-color: var(--neon-blue); box-shadow: 0 0 10px rgba(59, 130, 246, 0.5); }
-        .login-input:focus + .input-icon-pos { color: var(--neon-blue); filter: drop-shadow(0 0 5px var(--neon-blue)); }
+        /* Admin Layout */
+        .sidebar { width: 250px; background-color: var(--sidebar-bg); color: #9CA3AF; display: flex; flex-direction: column; flex-shrink: 0; }
+        .logo-area { padding: 25px; font-weight: 700; color: white; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; }
+        .logo-dot { width: 10px; height: 10px; background: var(--status-running); border-radius: 50%; margin-right: 10px; box-shadow: 0 0 10px var(--status-running); }
+        .nav-item { padding: 16px 25px; cursor: pointer; display: flex; align-items: center; border-left: 3px solid transparent; transition: 0.2s; }
+        .nav-item:hover, .nav-item.active { background-color: var(--sidebar-hover); color: white; border-left-color: var(--status-running); }
+        .nav-icon { margin-right: 15px; width: 24px; text-align: center; }
+        .main-content { flex-grow: 1; padding: 40px; overflow-y: auto; width: 100%; }
+        
+        .header-title { font-size: 1.8rem; font-weight: 700; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; }
+        .card { background: var(--card-bg); border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); padding: 25px; margin-bottom: 25px; }
+        
+        /* Form & Inputs */
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 0.8rem; font-weight: bold; color: var(--text-secondary); margin-bottom: 5px; }
+        .form-group input, .form-group select { width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; box-sizing: border-box; }
+        
+        /* Status Panel */
+        .status-panel { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 40px; }
+        .status-card { background: var(--card-bg); padding: 25px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; border-top: 4px solid transparent; }
+        .card-running { border-top-color: var(--status-running); }
+        .card-stop { border-top-color: var(--status-stop); }
+        .card-alert { border-top-color: var(--alert-critical); }
+        .status-value { font-family: 'Roboto Mono', monospace; font-size: 2.5rem; font-weight: 700; }
 
-        .cyber-btn { width: 100%; padding: 15px; background: linear-gradient(90deg, var(--neon-blue), #2563eb); border: none; border-radius: 8px; color: white; font-size: 1rem; font-weight: bold; letter-spacing: 1px; text-shadow: 0 1px 2px rgba(0,0,0,0.3); box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); transition: 0.3s; display: flex; justify-content: center; align-items: center; }
-        .cyber-btn:active { transform: scale(0.98); box-shadow: 0 0 5px rgba(59, 130, 246, 0.4); }
+        .alert-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+        .alert-card { background: white; border-radius: 8px; padding: 15px; border-left: 5px solid #ccc; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
 
-        /* --- 管理者画面 (PC) - 日本語化 --- */
-        .admin-layout { display: flex; height: 100%; }
-        .sidebar { width: 250px; background: rgba(0,0,0,0.6); border-right: 1px solid var(--glass-border); display: flex; flex-direction: column; }
-        .sidebar-header { padding: 25px; font-weight:bold; font-size:1.2rem; color:white; border-bottom:1px solid var(--glass-border); display:flex; align-items:center; gap:10px;}
-        .nav-item { padding: 16px; color: var(--text-sub); transition: 0.3s; display: flex; align-items: center; gap:10px; }
-        .nav-item:hover { color: white; background: rgba(255,255,255,0.05); border-left: 3px solid var(--neon-blue); }
-        .main-content { flex: 1; padding: 30px; overflow-y: auto; }
-        .card { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: 12px; padding: 25px; margin-bottom: 20px; color: white; }
-        .status-panel { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
-        .status-card { background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); border-radius: 12px; padding: 20px; display: flex; justify-content: space-between; align-items: center; }
-        table { width: 100%; border-collapse: collapse; color: white; }
-        th { text-align: left; padding: 10px; color: var(--text-sub); border-bottom: 1px solid var(--glass-border); font-size:0.9rem; }
-        td { padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        /* Tables */
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin-top: 10px; }
+        th { text-align: left; padding: 12px; color: var(--text-secondary); border-bottom: 2px solid var(--border-color); font-size: 0.8rem; background: #F9FAFB; white-space: nowrap; }
+        td { padding: 12px; border-bottom: 1px solid var(--border-color); vertical-align: top; }
+        .tag { padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 700; display: inline-block; }
+        .tag-lease { background: #F3E8FF; color: #7E22CE; } .tag-asset { background: #E0E7FF; color: #3730A3; }
+        .badge-run { color: var(--status-running); font-weight: bold; }
+        
+        /* Modal Style */
+        #modal-maint { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 2000; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(4px); }
+        .modal-card { background: white; padding: 30px; border-radius: 12px; width: 90%; max-width: 600px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+        .modal-title { font-size: 1.5rem; font-weight: bold; margin-bottom: 20px; border-bottom: 2px solid var(--primary-blue); padding-bottom: 10px; }
+        .maint-section-title { font-weight: bold; margin-top: 20px; margin-bottom: 10px; color: var(--primary-blue); background: #EFF6FF; padding: 5px 10px; border-radius: 4px; }
 
-        /* --- ドライバー画面 (Mobile) - 日本語化 --- */
-        .mobile-wrapper { max-width: 480px; margin: 0 auto; height: 100vh; display: flex; flex-direction: column; position: relative; background: rgba(0,0,0,0.2); backdrop-filter: blur(10px); }
-        .m-header { padding: 20px; display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.5); border-bottom: 1px solid var(--glass-border); font-weight: bold; }
-        .m-header-title { display: flex; align-items: center; gap: 10px; }
+        /* Driver Mobile */
+        .mobile-wrapper { max-width: 480px; margin: 0 auto; height: 100vh; display: flex; flex-direction: column; background: #F8FAFC; border-left: 1px solid #ddd; border-right: 1px solid #ddd; width: 100%; }
+        .m-header { padding: 15px; background: white; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
         .m-content { padding: 20px; flex: 1; overflow-y: auto; padding-bottom: 80px; }
-        .m-card { background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
-        .back-btn { margin-bottom: 15px; font-weight: bold; color: var(--text-sub); display: flex; align-items: center; gap: 5px; cursor: pointer; }
-
-        /* 車両選択 */
-        .vehicle-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .vehicle-btn { background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); border-radius: 12px; padding: 20px 10px; text-align: center; cursor: pointer; transition: 0.3s; position: relative; overflow: hidden; }
-        .vehicle-btn:active { background: rgba(59, 130, 246, 0.2); border-color: var(--neon-blue); }
-        .vehicle-btn.running { background: rgba(16, 185, 129, 0.1); border-color: var(--neon-green); opacity: 0.7; pointer-events: none; }
-        .v-no { font-size: 1.2rem; font-weight: bold; color: white; }
-        .v-name { font-size: 0.8rem; color: var(--text-sub); margin-top: 5px; }
-        .v-status { font-size: 0.8rem; color: var(--neon-green); font-weight: bold; margin-top: 5px; text-shadow: 0 0 5px var(--neon-green); display: flex; align-items: center; justify-content: center; gap:5px; }
-
-        /* アニメーション */
-        .anim-box { text-align: center; padding: 40px 0; overflow: hidden; position: relative; height: 120px; background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.5)); border-radius: 10px; margin-bottom: 20px; }
-        .truck-anim { font-size: 5rem; position: absolute; top: 20px; transform: scaleX(-1); filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.8)); animation: driveLeftToRight 4s infinite linear; }
-        @keyframes driveLeftToRight { 0% { left: -100px; } 100% { left: 100%; } }
-        .house-anim { font-size: 4rem; display: inline-block; filter: drop-shadow(0 0 10px rgba(245, 158, 11, 0.8)); animation: bounce 2s infinite; }
-        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-
-        /* カメラUI */
-        .camera-container { position: relative; width: 100%; height: 250px; background: #000; border-radius: 12px; overflow: hidden; margin-bottom: 15px; border: 1px solid var(--glass-border); display: flex; justify-content: center; align-items: center; }
-        video#camera-stream { width: 100%; height: 100%; object-fit: cover; }
-        .guide-overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80%; height: 60px; border: 2px solid var(--neon-green); box-shadow: 0 0 0 9999px rgba(0,0,0,0.7); z-index: 10; pointer-events: none; display: flex; justify-content: center; align-items: center; }
-        .guide-text { color: var(--neon-green); font-weight: bold; background: black; padding: 5px 10px; border-radius: 4px; font-size: 0.8rem; margin-top: -95px; border: 1px solid var(--neon-green); display: flex; align-items: center; gap:5px; }
-        .shutter-btn { position: absolute; bottom: 20px; width: 70px; height: 70px; background: white; border-radius: 50%; border: 5px solid rgba(255,255,255,0.5); z-index: 20; cursor: pointer; box-shadow: 0 0 20px rgba(255,255,255,0.5); }
-        .camera-placeholder { position: absolute; inset: 0; background: rgba(30,30,30,0.9); color: var(--text-sub); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 30; cursor: pointer; }
-
-        /* 入力フォーム & スイッチ */
-        .odo-input-lg { font-size: 2.2rem; padding: 15px; width: 100%; text-align: center; font-weight: bold; font-family: 'Orbitron', monospace; background: rgba(0,0,0,0.5); border: 2px solid var(--neon-blue); color: var(--neon-blue); border-radius: 12px; box-sizing: border-box; text-shadow: 0 0 10px rgba(59, 130, 246, 0.5); }
-        .check-row { display: flex; justify-content: space-between; padding: 15px 0; border-bottom: 1px solid rgba(255,255,255,0.1); align-items: center; }
-        .check-label { display: flex; align-items: center; gap: 10px; }
+        .m-card { background: white; border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        
+        .vehicle-btn { background: white; border: 1px solid var(--border-color); border-radius: 10px; padding: 20px; text-align: center; margin-bottom: 10px; cursor: pointer; transition: 0.2s; }
+        .vehicle-btn:active { background: #E2E8F0; }
+        .vehicle-btn.running { background: #D1FAE5; border-color: var(--status-running); color: #065F46; pointer-events: none; opacity: 0.7; }
+        
+        /* Checks & Camera */
+        .check-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #F1F5F9; }
         .switch { position: relative; display: inline-block; width: 50px; height: 28px; }
         .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: #4b5563; border-radius: 34px; transition: .4s; }
+        .slider { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; border-radius: 34px; transition: .4s; }
         .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 4px; bottom: 4px; background-color: white; border-radius: 50%; transition: .4s; }
-        input:checked + .slider { background-color: var(--neon-green); box-shadow: 0 0 10px var(--neon-green); }
+        input:checked + .slider { background-color: var(--status-running); }
         input:checked + .slider:before { transform: translateX(22px); }
 
-        /* FAB & Modal */
-        .fab-report { position: absolute; bottom: 30px; right: 20px; width: 60px; height: 60px; border-radius: 50%; background: var(--neon-red); color: white; border: none; display: flex; justify-content: center; align-items: center; z-index: 100; box-shadow: 0 0 20px rgba(239, 68, 68, 0.6); animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
-        #modal-report { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 200; display: flex; justify-content: center; align-items: end; backdrop-filter: blur(5px); }
-        .modal-body { background: #1f2937; width: 100%; max-width: 480px; border-radius: 20px 20px 0 0; padding: 25px; border-top: 1px solid var(--glass-border); color: white; }
-        canvas#canvas-snap { display: none; }
-        img#captured-image { width: 100%; height: 100%; object-fit: cover; position: absolute; top:0; left:0; z-index: 20; }
-        .retake-btn { position: absolute; bottom: 20px; right: 20px; background: rgba(0,0,0,0.8); color: white; padding: 8px 16px; border-radius: 20px; z-index: 25; border: 1px solid white; display: flex; align-items: center; gap: 5px; }
+        .camera-box { position: relative; width: 100%; height: 240px; background: #000; border-radius: 8px; overflow: hidden; margin-top: 10px; display: flex; justify-content: center; align-items: center; }
+        video { width: 100%; height: 100%; object-fit: cover; }
+        img.snap { width: 100%; height: 100%; object-fit: cover; position: absolute; inset: 0; z-index: 10; }
+        .guide-frame { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80%; height: 80px; border: 3px solid var(--status-running); box-shadow: 0 0 0 9999px rgba(0,0,0,0.5); z-index: 15; pointer-events: none; }
+        .btn-shutter { position: absolute; bottom: 20px; width: 70px; height: 70px; border-radius: 50%; background: transparent; border: 4px solid white; z-index: 20; cursor: pointer; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        .btn-shutter::after { content: ''; display: block; width: 56px; height: 56px; background: white; border-radius: 50%; transition: transform 0.1s; }
+        .btn-shutter:active::after { transform: scale(0.9); background: #e5e5e5; }
 
-        /* 色別ボタン */
-        .btn-neon-green { background: linear-gradient(90deg, #059669, var(--neon-green)); border: none; color: white; box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); }
-        .btn-neon-orange { background: linear-gradient(90deg, #d97706, var(--neon-orange)); border: none; color: white; box-shadow: 0 0 15px rgba(245, 158, 11, 0.4); }
-        .btn-neon-red { background: linear-gradient(90deg, #b91c1c, var(--neon-red)); border: none; color: white; box-shadow: 0 0 15px rgba(239, 68, 68, 0.4); }
-        .m-btn-lg { width: 100%; padding: 20px; border-radius: 12px; font-weight: bold; margin-bottom: 10px; font-size: 1.1rem; display: flex; justify-content: center; align-items: center; }
+        /* Buttons & Inputs */
+        .btn-primary { background-color: var(--primary-blue); color: white; padding: 12px; border:none; border-radius:6px; font-weight:bold; cursor:pointer; }
+        .btn-csv { background-color: #059669; color: white; padding: 10px; border:none; border-radius:6px; font-weight:bold; cursor:pointer; width:100%; }
+        .btn-csv:hover { background-color: #047857; }
+        .m-btn-lg { width: 100%; padding: 16px; border-radius: 8px; border: none; font-size: 1.1rem; font-weight: bold; margin-bottom: 10px; cursor: pointer; color: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .bg-green { background: var(--status-running); } .bg-orange { background: var(--alert-warning); } .bg-red { background: var(--alert-critical); }
+        .btn-mini { padding: 5px 10px; background:white; border:1px solid #ccc; border-radius:4px; font-size:0.8rem; cursor: pointer; }
+        .btn-del { color: var(--alert-critical); border-color: var(--alert-critical); }
+        .btn-edit { background: var(--primary-blue); color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; white-space: nowrap; margin-right: 5px; }
+        
+        .odo-input { font-size: 2rem; padding: 10px; width: 100%; text-align: center; font-weight: bold; border: 2px solid var(--primary-blue); border-radius: 8px; box-sizing: border-box; background: #EFF6FF; color: var(--primary-blue); font-family: 'Roboto Mono'; }
+        .ac-input { width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 6px; box-sizing: border-box; font-size: 1rem; margin-top: 5px; }
+        
+        .export-panel { background: #f0fdf4; border: 1px solid #bbf7d0; padding: 20px; border-radius: 8px; margin-bottom: 30px; }
+        .export-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; align-items: end; }
+        
+        .td-data-item { margin-bottom: 4px; font-size: 0.85rem; color: #374151; }
+        .td-label { font-weight: bold; color: #6B7280; font-size: 0.75rem; margin-right: 5px; }
+        .td-empty { color: #D1D5DB; font-size: 0.8rem; }
     </style>
 </head>
 <body>
 
+    <div id="loader" class="hidden"><div class="spinner"></div><div id="loader-msg">データ同期中...</div></div>
+
     <div id="screen-login">
-        <div class="login-glass-card">
-            <div class="app-title">FLEET<br>MANAGER</div>
-            <p style="color:var(--text-sub); margin-bottom:30px; font-size:0.9rem; font-family:'Orbitron'">FUTURE LOGISTICS SYSTEM</p>
-            
-            <div class="input-wrapper">
-                <input type="email" id="login-email" class="login-input" placeholder="ID / Email" value="driver@example.com" onkeydown="handleEnterKey(event, tryLogin)">
-                <svg class="icon input-icon-pos" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+        <div class="login-box">
+            <h2 style="color:#111827; margin-bottom:5px;">Fleet Manager</h2>
+            <p style="color:#6B7280; font-size:0.9rem; margin-bottom:30px;">v47.0 Date Fix</p>
+            <div id="api-warning" style="color:#EF4444; font-size:0.8rem; display:none; margin-bottom:10px;">※デモモード（URL未設定）</div>
+            <div style="text-align:left;">
+                <label style="font-size:0.8rem; font-weight:bold;">メールアドレス</label>
+                <input type="text" id="login-email" class="login-input" placeholder="admin@example.com" value="admin@example.com">
+                <label style="font-size:0.8rem; font-weight:bold;">パスワード</label>
+                <input type="password" id="login-pass" class="login-input" value="1234">
             </div>
-            <div class="input-wrapper">
-                <input type="password" id="login-pass" class="login-input" placeholder="Password" value="1234" onkeydown="handleEnterKey(event, tryLogin)">
-                <svg class="icon input-icon-pos" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+            <button class="btn-primary" style="width:100%; margin-top:10px;" onclick="tryLogin()">ログイン</button>
+            <div style="margin-top:20px; font-size:0.75rem; color:#9CA3AF; text-align:left;">管理者: admin@example.com<br>マネージャー: manager@example.com<br>現場: driver@example.com<br>(PW: 1234)</div>
+        </div>
+    </div>
+
+    <div id="app-admin" class="hidden" style="display:flex; width:100%;">
+        <div class="sidebar">
+            <div class="logo-area"><div class="logo-dot"></div> Fleet Monitor</div>
+            <div class="nav-item active" id="nav-dash" onclick="switchPage('dashboard')"><span class="nav-icon">📊</span> ダッシュボード</div>
+            <div class="nav-item" id="nav-vehicles" onclick="switchPage('vehicles')"><span class="nav-icon">🚚</span> 車両台帳</div>
+            <div class="nav-item" id="nav-maint" onclick="switchPage('maint')"><span class="nav-icon">🔧</span> 点検・消耗品</div>
+            <div class="nav-item" id="nav-users" onclick="switchPage('users')"><span class="nav-icon">👤</span> ユーザー管理</div>
+            <div class="nav-item" id="nav-export" onclick="switchPage('export')" style="margin-top:20px; border-top:1px solid #333; color:#10B981;"><span class="nav-icon">📥</span> 日報管理・出力</div>
+            <div class="nav-item" onclick="location.reload()" style="margin-top:auto;"><span class="nav-icon">↩️</span> ログアウト</div>
+        </div>
+
+        <div class="main-content">
+            <div id="page-dashboard" class="page-section">
+                <div class="header-title">Dashboard <button class="btn-mini" onclick="fetchData()">🔄 最新情報に更新</button></div>
+                <div class="status-panel">
+                    <div class="status-card card-running"><div><div class="status-label">稼働中</div><div class="status-value" id="val-running">-</div></div><div style="font-size:2rem;">🚚</div></div>
+                    <div class="status-card card-alert"><div><div class="status-label">アラート (期限)</div><div class="status-value" id="val-alert" style="color:var(--alert-critical);">-</div></div><div style="font-size:2rem;">⚠️</div></div>
+                    <div class="status-card card-stop"><div><div class="status-label">全車両数</div><div class="status-value" id="val-total">-</div></div><div style="font-size:2rem;">📋</div></div>
+                </div>
+                <h3 style="color:#111827;">⚠️ 期限切れ・直前アラート</h3>
+                <div class="alert-grid" id="dashboard-alerts"></div>
+            </div>
+
+            <div id="page-vehicles" class="page-section hidden">
+                <div class="header-title">Vehicle Registry</div>
+                <div class="card" style="border-left: 5px solid var(--primary-blue);">
+                    <h3 style="margin-top:0;">新規車両登録</h3>
+                    <div class="form-grid">
+                        <div class="form-group"><label>車両番号</label><input type="text" id="reg-v-no" placeholder="足立100あ1234"></div>
+                        <div class="form-group"><label>車種</label><input type="text" id="reg-v-name" placeholder="4tウイング"></div>
+                        <div class="form-group"><label>区分</label><select id="reg-v-type"><option value="lease">リース</option><option value="asset">自社資産</option></select></div>
+                    </div>
+                    <button class="btn-primary" onclick="addVehicle()">＋ 台帳に登録</button>
+                </div>
+                <div class="card">
+                    <div style="overflow-x:auto;">
+                        <table id="table-vehicles">
+                            <thead><tr><th>No / 車種</th><th>区分</th><th>現在状態</th><th>現在Odo</th><th>操作</th></tr></thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div id="page-maint" class="page-section hidden">
+                <div class="header-title">Maintenance</div>
+                <div class="card">
+                    <div style="overflow-x:auto;">
+                        <table id="table-maint">
+                            <thead>
+                                <tr><th>車両</th><th>車検期限</th><th>点検計画 (3ヶ月/12ヶ月/他)</th><th>消耗品 (タイヤ/バッテリー)</th><th>操作</th></tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
             
-            <button class="cyber-btn" onclick="tryLogin()">
-                <svg class="icon btn-icon" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>
-                SYSTEM LOGIN
-            </button>
-            <div style="margin-top:20px; font-size:0.7rem; color:var(--text-sub);">
-                Admin: admin@example.com<br>Driver: driver@example.com
+            <div id="page-users" class="page-section hidden">
+                <div class="header-title">Users Registry</div>
+                <div class="card" style="border-left: 5px solid var(--primary-blue);">
+                    <h3 style="margin-top:0;">新規ユーザー登録 / 編集</h3>
+                    <div class="form-grid">
+                        <div class="form-group"><label>氏名</label><input type="text" id="reg-u-name" placeholder="氏名"></div>
+                        <div class="form-group"><label>Email</label><input type="email" id="reg-u-email" placeholder="user@example.com"></div>
+                        <div class="form-group"><label>Pass</label><input type="text" id="reg-u-pass" value="1234"></div>
+                        <div class="form-group"><label>権限</label><select id="reg-u-role"><option value="driver">ドライバー</option><option value="manager">マネージャー</option><option value="admin">管理者</option></select></div>
+                        <div class="form-group"><label>免許期限</label><input type="date" id="reg-u-license"></div>
+                    </div>
+                    <button class="btn-primary" id="btn-user-save" onclick="addUser()">＋ ユーザーを追加</button>
+                </div>
+                <div class="card">
+                    <table id="table-users">
+                        <thead><tr><th>氏名</th><th>Email</th><th>権限</th><th>免許期限</th><th>操作</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="page-export" class="page-section hidden">
+                <div class="header-title">Reports Export</div>
+                <div class="card">
+                    <h3 style="margin-top:0; color:#065F46;">📥 日報データ出力設定</h3>
+                    <div class="export-grid">
+                        <div><label>開始日</label><input type="date" id="ex-start" class="login-input" style="margin:0;"></div>
+                        <div><label>終了日</label><input type="date" id="ex-end" class="login-input" style="margin:0;"></div>
+                        <div><label>車両</label><select id="ex-car" class="login-input" style="margin:0;"><option value="">全車両</option></select></div>
+                        <div><label>ドライバー</label><select id="ex-driver" class="login-input" style="margin:0;"><option value="">全員</option></select></div>
+                    </div>
+                    <div style="margin-top:20px;">
+                        <button class="btn-csv" onclick="downloadCSV()">CSVダウンロード (Excel形式)</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <div id="app-admin" class="admin-layout hidden">
-        <div class="sidebar">
-            <div class="sidebar-header">
-                <svg class="icon icon-glow-blue" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
-                車両管理システム
+    <div id="modal-maint" class="hidden">
+        <div class="modal-card">
+            <div class="modal-title">整備・消耗品情報の編集</div>
+            <h3 id="modal-maint-title" style="margin-top:0; color:#4B5563;">車両番号</h3>
+            <div class="maint-section-title">📅 法定・点検スケジュール</div>
+            <div class="form-grid">
+                <div class="form-group"><label>車検満了日</label><input type="date" id="edt-shaken"></div>
+                <div class="form-group"><label>3ヶ月点検日</label><input type="date" id="edt-tenken3"></div>
+                <div class="form-group"><label>12ヶ月点検日</label><input type="date" id="edt-tenken12"></div>
+                <div class="form-group"><label>リース/自主点検</label><input type="date" id="edt-tenkenLease"></div>
             </div>
-            <div class="nav-item" onclick="location.reload()">
-                <svg class="icon icon-glow-red" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-                ログアウト
+            <div class="maint-section-title">🔧 消耗品交換履歴</div>
+            <div class="form-grid">
+                <div class="form-group"><label>夏タイヤ交換日</label><input type="date" id="edt-tireS"></div>
+                <div class="form-group"><label>冬タイヤ交換日</label><input type="date" id="edt-tireW"></div>
+                <div class="form-group"><label>バッテリー交換日</label><input type="date" id="edt-battery"></div>
             </div>
-        </div>
-        <div class="main-content">
-            <div class="status-panel">
-                <div class="status-card">
-                    <div><small style="color:var(--text-sub)">稼働中</small><div class="status-val" style="color:var(--neon-green)" id="adm-running">0</div></div>
-                    <svg class="icon" style="width:40px;height:40px;color:var(--neon-green);filter:drop-shadow(0 0 5px var(--neon-green))" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
-                </div>
-                <div class="status-card">
-                    <div><small style="color:var(--text-sub)">アラート</small><div class="status-val" style="color:var(--neon-red)" id="adm-alert">0</div></div>
-                    <svg class="icon" style="width:40px;height:40px;color:var(--neon-red);filter:drop-shadow(0 0 5px var(--neon-red))" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-                </div>
-            </div>
-            <h3 style="margin-top:30px; display:flex; align-items:center; gap:10px;">
-                <svg class="icon icon-glow-blue" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-                車両ステータス
-            </h3>
-            <div class="card">
-                <table id="adm-table"><thead><tr><th>車両番号</th><th>車種</th><th>状態</th><th>前回走行距離</th></tr></thead><tbody></tbody></table>
+            <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+                <button class="btn-mini" onclick="document.getElementById('modal-maint').classList.add('hidden')">キャンセル</button>
+                <button class="btn-primary" onclick="saveMaintFromModal()">保存する</button>
             </div>
         </div>
     </div>
 
     <div id="app-driver" class="mobile-wrapper hidden">
-        <div class="m-header">
-            <div class="m-header-title">
-                <svg class="icon icon-glow-blue" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
-                ドライバー業務
-            </div>
-            <div onclick="location.reload()" style="font-size:0.8rem; border:1px solid var(--glass-border); padding:4px 10px; border-radius:4px; display:flex; align-items:center; gap:5px;">
-                <svg class="icon" style="width:14px;height:14px;" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-                終了
-            </div>
-        </div>
+        <div class="m-header"><div>ドライバー業務</div><div style="display:flex; gap:10px;"><button class="btn-mini" onclick="location.reload()">終了</button></div></div>
         <div class="m-content">
-            <div id="d-step-1">
-                <div class="m-card">
-                    <h3 style="margin-top:0; border-bottom:1px solid var(--glass-border); padding-bottom:10px;">車両選択</h3>
-                    <p id="d-name-disp" style="color:var(--text-sub); margin-bottom:20px;"></p>
-                    <div id="vehicle-grid-area" class="vehicle-grid"></div>
-                </div>
-            </div>
-
+            <div id="d-step-1"><div class="m-card"><h3 style="margin-top:0;">車両を選択</h3><div id="vehicle-grid-area"></div></div></div>
             <div id="d-step-2" class="hidden">
-                <div class="back-btn" onclick="backToStep1()">
-                    <svg class="icon" viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-                    戻る
-                </div>
-                <div class="m-card">
-                    <label style="font-weight:bold; color:var(--neon-blue); display:block; margin-bottom:10px;">開始オドメーター入力</label>
-                    <input type="number" id="d-start-odo" class="odo-input-lg" onkeydown="handleEnterKey(event, startWork)">
-                    <div style="text-align:right; font-size:0.8rem; color:var(--text-sub); margin-top:5px;">前回値: <span id="d-last-odo-disp">0</span> km</div>
-                </div>
+                <div onclick="backToStep1()" style="margin-bottom:15px; font-weight:bold; cursor:pointer; color:var(--primary-blue);">◀ 戻る</div>
                 <div class="m-card">
                     <h3 style="margin-top:0;">乗車前点検</h3>
-                    <div class="check-row"><div class="check-label"><svg class="icon icon-glow-blue" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="3"></circle></svg>タイヤ・空気圧</div><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></div>
-                    <div class="check-row"><div class="check-label"><svg class="icon icon-glow-blue" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>ライト・ウインカー</div><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></div>
-                    <div class="check-row"><div class="check-label"><svg class="icon icon-glow-blue" viewBox="0 0 24 24"><path d="M12 2.69l5.74 5.74-5.74 5.74-5.74-5.74L12 2.69zM2 22h20"></path></svg>燃料・オイル</div><label class="switch"><input type="checkbox" checked><span class="slider"></span></label></div>
-                </div>
-                <button class="m-btn-lg btn-neon-green" onclick="startWork()">
-                    <svg class="icon btn-icon" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                    業務開始
-                </button>
-            </div>
-
-            <div id="d-step-driving" class="hidden">
-                <div class="m-card" style="text-align:center; padding:40px 20px; height: 60vh; display:flex; flex-direction:column; justify-content:center; border: 1px solid var(--neon-green);">
-                    <h2 id="msg-safe" style="color:var(--neon-green); font-size:1.8rem; text-shadow:0 0 10px var(--neon-green);">ご安全に！</h2>
-                    <div class="anim-box">
-                        <div class="truck-anim">🚚💨</div>
-                    </div>
-                    <p id="d-running-info" style="font-weight:bold; font-size:1.2rem;"></p>
-                </div>
-                <button class="m-btn-lg btn-neon-orange" style="margin-top:20px;" onclick="goToReturn()">
-                    <svg class="icon btn-icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-                    帰庫処理へ
-                </button>
-            </div>
-
-            <div id="d-step-return" class="hidden">
-                <div class="back-btn" onclick="backToDriving()">
-                    <svg class="icon" viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-                    戻る
+                    <div class="check-item"><span class="check-label">エンジン異音</span><label class="switch"><input type="checkbox" id="chk-engine" checked><span class="slider"></span></label></div>
+                    <div class="check-item"><span class="check-label">ブレーキ点検</span><label class="switch"><input type="checkbox" id="chk-brake" checked><span class="slider"></span></label></div>
+                    <div class="check-item"><span class="check-label">ウインカー点検</span><label class="switch"><input type="checkbox" id="chk-blinker" checked><span class="slider"></span></label></div>
+                    <div class="check-item"><span class="check-label">ライト点検</span><label class="switch"><input type="checkbox" id="chk-light" checked><span class="slider"></span></label></div>
+                    <div class="check-item"><span class="check-label">ワイパー</span><label class="switch"><input type="checkbox" id="chk-wiper" checked><span class="slider"></span></label></div>
+                    <div class="check-item"><span class="check-label">タイヤ</span><label class="switch"><input type="checkbox" id="chk-tire" checked><span class="slider"></span></label></div>
+                    <div style="margin-top:15px; text-align:right;"><button class="btn-mini" style="color:var(--alert-critical); border-color:var(--alert-critical);" onclick="openCamera('defect')">📷 異常箇所撮影</button></div>
+                    <div id="box-defect" class="camera-box hidden"><video id="vid-defect" autoplay playsinline muted></video><div class="guide-frame"></div><div class="btn-shutter" onclick="snap('defect')"></div><img id="img-defect" class="snap hidden"><div style="position:absolute; bottom:20px; right:20px; z-index:25;"><button onclick="resetCam('defect')" class="btn-mini">クリア</button></div></div>
                 </div>
                 <div class="m-card">
-                    <h3 style="margin-top:0;">帰庫オドメーター入力</h3>
-                    <p style="font-size:0.8rem; color:var(--text-sub); margin-bottom:10px;">緑枠に合わせて撮影してください</p>
-                    
-                    <div class="camera-container">
-                        <div id="cam-placeholder" class="camera-placeholder" onclick="startWebRTC()">
-                            <svg class="icon icon-glow-blue" style="width:60px;height:60px;margin-bottom:10px;" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
-                            <div>カメラ起動</div>
-                        </div>
-                        <video id="camera-stream" autoplay playsinline muted></video>
-                        <div class="guide-overlay" id="guide-overlay">
-                            <div class="guide-text"><svg class="icon" style="width:14px;height:14px;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>オドメーター</div>
-                        </div>
-                        <div class="shutter-btn" id="shutter-btn" onclick="takeSnapshot()"></div>
-                        <img id="captured-image" class="hidden">
-                        <div class="retake-btn hidden" id="retake-btn" onclick="retakePhoto()">
-                            <svg class="icon" style="width:16px;height:16px;" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"></polyline><polyline points="23 20 23 14 17 14"></polyline><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"></path></svg>
-                            撮り直す
-                        </div>
-                    </div>
-                    <canvas id="canvas-snap"></canvas>
-
-                    <label style="font-weight:bold; margin-top:15px; display:block; color:var(--neon-blue);">数値入力 (km)</label>
-                    <input type="number" id="d-end-odo" class="odo-input-lg" placeholder="12345" onkeydown="handleEnterKey(event, endWork)">
+                    <label style="font-weight:bold;">開始オドメーター</label>
+                    <input type="number" id="d-start-odo" class="odo-input">
+                    <div style="text-align:right; font-size:0.9rem; margin-top:5px; margin-bottom:15px;">前回: <span id="d-last-odo-disp">-</span> km</div>
+                    <label style="display:block; margin-bottom:5px;">行き先</label><input type="text" id="d-dest" class="ac-input" list="list-dest" placeholder="例: 東京工場"><datalist id="list-dest"></datalist>
+                    <label style="display:block; margin-top:10px; margin-bottom:5px;">目的</label><input type="text" id="d-purp" class="ac-input" list="list-purp" placeholder="例: 配送"><datalist id="list-purp"></datalist>
+                    <label style="display:block; margin-top:10px; margin-bottom:5px;">同乗者</label><input type="text" id="d-pass" class="ac-input" list="list-pass" placeholder="例: 佐藤 二郎"><datalist id="list-pass"></datalist>
                 </div>
-                <button class="m-btn-lg btn-neon-red" onclick="endWork()">
-                    <svg class="icon btn-icon" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-                    業務終了
-                </button>
+                <button class="m-btn-lg bg-green" onclick="startWork()">点検完了・出庫</button>
             </div>
-
-            <div id="d-step-end" class="hidden">
-                <div style="text-align:center; margin-top:80px;">
-                    <h1 id="msg-goodjob" style="color:white; text-shadow:0 0 10px white;">お疲れ様でした</h1>
-                    <div style="position:relative; height:150px; margin-top:30px;">
-                        <div class="house-anim">🏠</div>
-                    </div>
-                    <p style="color:var(--text-sub);">3秒後にログアウトします...</p>
+            <div id="d-step-driving" class="hidden"><div class="m-card" style="text-align:center; padding:40px 20px;"><h2 style="color:var(--status-running); margin-top:0;">ご安全に！</h2><div style="font-size:4rem;">🚚💨</div><p id="d-running-info" style="font-weight:bold; font-size:1.2rem;"></p></div><button class="m-btn-lg bg-orange" onclick="goToReturn()">帰庫・日報作成</button></div>
+            <div id="d-step-return" class="hidden">
+                <div class="m-card">
+                    <h3 style="margin-top:0;">日報入力</h3>
+                    <p style="font-size:0.9rem;">終了オドメーター撮影</p>
+                    <div class="camera-box"><video id="vid-odo" autoplay playsinline muted></video><div class="guide-frame"></div><div class="btn-shutter" onclick="snap('odo')"></div><img id="img-odo" class="snap hidden"><div style="position:absolute; bottom:20px; right:20px; z-index:25;"><button onclick="resetCam('odo')" class="btn-mini">撮り直し</button></div></div><canvas id="canvas-work" class="hidden"></canvas>
+                    <label style="margin-top:15px; display:block;">終了距離入力</label><input type="number" id="d-end-odo" class="odo-input" oninput="calcDist()"><div style="text-align:center; margin-top:5px; font-weight:bold;">本日走行: <span id="d-dist-val">0</span> km</div>
+                    <label style="margin-top:15px; display:block;">運転時間 (時間.小数)</label>
+                    <input type="number" step="0.1" id="d-drive-time" class="ac-input" placeholder="例: 1.5 (1時間30分)">
                 </div>
+                <button class="m-btn-lg bg-red" onclick="endWork()">日報送信・業務終了</button>
             </div>
-        </div>
-        
-        <button class="fab-report" onclick="toggleReportModal(true)">
-            <svg class="icon" style="width:30px;height:30px;" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-        </button>
-    </div>
-
-    <div id="modal-report" class="hidden">
-        <div class="modal-body">
-            <h3 style="margin-top:0; color:var(--neon-red); display:flex; align-items:center; gap:10px;">
-                <svg class="icon icon-glow-red" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-                異常報告
-            </h3>
-            <label style="display:block; margin-bottom:5px;">写真 (カメラ起動)</label>
-            <input type="file" accept="image/*" capture="environment" style="width:100%; margin-bottom:15px; background:rgba(0,0,0,0.3); padding:10px; border-radius:8px; border:1px solid var(--glass-border); color:var(--text-sub);">
-            <label style="display:block; margin-bottom:5px;">詳細</label>
-            <input type="text" placeholder="状況を入力してください..." class="login-input" style="background:rgba(0,0,0,0.3);">
-            <div style="display:flex; gap:10px; margin-top:20px;">
-                <button class="m-btn-lg" style="background:#4b5563; color:white;" onclick="toggleReportModal(false)">閉じる</button>
-                <button class="m-btn-lg btn-neon-red" onclick="submitReport()">送信</button>
-            </div>
+            <div id="d-step-end" class="hidden"><div style="text-align:center; margin-top:80px;"><h1>お疲れ様でした</h1><div style="font-size:4rem;">🏠</div><p>日報送信完了</p></div></div>
         </div>
     </div>
 
     <script>
-        // --- Logic (日本語メッセージ対応) ---
-        const INIT_USERS = [{ email:'admin@example.com', pass:'1234', role:'admin' }, { email:'driver@example.com', pass:'1234', role:'driver', name:'田中' }];
-        const INIT_VEHICLES = [{ id:'v1', no:'足立100あ1111', name:'4tウイング', status:'standby', lastOdo:125000 }, { id:'v2', no:'品川100い2222', name:'2t平ボディ', status:'standby', lastOdo:45000 }];
-        if(!localStorage.getItem('sys_v18_users')) localStorage.setItem('sys_v18_users', JSON.stringify(INIT_USERS));
-        if(!localStorage.getItem('sys_v18_vehicles')) localStorage.setItem('sys_v18_vehicles', JSON.stringify(INIT_VEHICLES));
+        // Init Data
+        const DEMO_DATA = { 
+            users: [
+                { email: 'admin@example.com', pass: '1234', name: '管理者 太郎', role: 'admin', license: '2030-01-01' },
+                { email: 'manager@example.com', pass: '1234', name: '運行 マネ子', role: 'manager', license: '2029-01-01' },
+                { email: 'driver@example.com', pass: '1234', name: '鈴木 一郎', role: 'driver', license: '2026-05-01' }
+            ], 
+            vehicles: [
+                { id: 'v1', no: '足立100あ1111', name: '4tウイング', assetType: 'lease', status: 'standby', lastOdo: 125000, shaken: '2026-02-01' },
+                { id: 'v2', no: '品川100い2222', name: '2t平ボディ', assetType: 'asset', status: 'standby', lastOdo: 45000, shaken: '2025-12-31' },
+                { id: 'v3', no: '練馬400う3333', name: 'ハイエース', assetType: 'lease', status: 'standby', lastOdo: 23000, shaken: '2026-05-20' },
+                { id: 'v4', no: '多摩100え4444', name: '10t大型', assetType: 'lease', status: 'standby', lastOdo: 340000, shaken: '2025-11-15' },
+                { id: 'v5', no: '横浜100お5555', name: '2t保冷車', assetType: 'asset', status: 'standby', lastOdo: 89000, shaken: '2026-03-10' },
+                { id: 'v6', no: '川崎400か6666', name: 'プロボックス', assetType: 'lease', status: 'standby', lastOdo: 12000, shaken: '2026-08-01' },
+                { id: 'v7', no: '相模100き7777', name: '4tユニック', assetType: 'asset', status: 'standby', lastOdo: 67000, shaken: '2025-10-20' },
+                { id: 'v8', no: '千葉100く8888', name: '4tウイング', assetType: 'lease', status: 'standby', lastOdo: 156000, shaken: '2026-01-10' },
+                { id: 'v9', no: '習志野100け9999', name: '2t平ボディ', assetType: 'asset', status: 'standby', lastOdo: 54000, shaken: '2026-04-05' },
+                { id: 'v10', no: '大宮100こ0001', name: '大型ダンプ', assetType: 'lease', status: 'standby', lastOdo: 210000, shaken: '2025-12-01' },
+                { id: 'v11', no: '所沢400さ0002', name: 'NV350キャラバン', assetType: 'lease', status: 'standby', lastOdo: 34000, shaken: '2026-07-20' },
+                { id: 'v12', no: '春日部100し0003', name: '4t冷凍車', assetType: 'asset', status: 'standby', lastOdo: 98000, shaken: '2026-02-15' }
+            ],
+            reports: []
+        };
+        
+        let localData = { users: [], vehicles: [], reports: [] };
+        let currentUser = null; let currentVehId = null; 
+        let workStartTime = null; let currentWorkData = {};
+        let inputHistory = JSON.parse(localStorage.getItem('fleet_history')) || { dests:[], purps:[], passes:[] };
+        let editTargetIndex = -1;
+        let editingUserIdx = -1;
 
-        let currentVehId = null; let isOdoPhotoTaken = false; let videoStream = null; let currentUser = null;
+        // ★ New: Safe Date Formatter (Prevents broken dates)
+        function formatDate(raw) {
+            if(!raw) return '';
+            const d = new Date(raw);
+            if(isNaN(d.getTime())) return '';
+            const y = d.getFullYear();
+            const m = ('0' + (d.getMonth() + 1)).slice(-2);
+            const day = ('0' + d.getDate()).slice(-2);
+            return `${y}-${m}-${day}`;
+        }
 
-        function handleEnterKey(e, cb) { if(e.key==="Enter"){ e.preventDefault(); document.activeElement.blur(); cb(); } }
+        // --- Fetch & Save ---
+        async function fetchData() {
+            showLoader(true);
+            try {
+                const res = await fetch(API_URL);
+                const data = await res.json();
+                
+                if (!data.users || data.users.length === 0) {
+                    console.log("No users found. Initializing...");
+                    localData = DEMO_DATA;
+                    await saveAction({ action: 'init', ...DEMO_DATA });
+                } else {
+                    localData = data;
+                }
+                
+                document.getElementById('api-warning').style.display = 'none';
+                refreshAllViews();
+            } catch(e) {
+                console.error(e);
+                alert("接続エラー");
+            } finally { showLoader(false); }
+        }
 
-        function tryLogin() {
+        async function saveAction(payload) {
+            showLoader(true);
+            try {
+                await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
+                await fetchData();
+                if(payload.action !== 'report' && payload.action !== 'init') alert("保存しました");
+            } catch(e) { alert("送信エラー"); } finally { showLoader(false); }
+        }
+
+        function showLoader(show) { document.getElementById('loader').classList.toggle('hidden', !show); }
+        function refreshAllViews() {
+            if(currentUser && (currentUser.role === 'admin' || currentUser.role === 'manager')) { 
+                updateDashboard(); renderVehicles(); renderMaintenance(); renderUsers(); updateExportOptions();
+            }
+            if(currentUser && currentUser.role === 'driver') initDriver();
+        }
+
+        async function tryLogin() {
             const email = document.getElementById('login-email').value;
             const pass = document.getElementById('login-pass').value;
-            const users = JSON.parse(localStorage.getItem('sys_v18_users'));
-            const user = users.find(u => u.email === email && u.pass === pass);
+            await fetchData();
+            const user = localData.users.find(u => u.email === email && String(u.pass) === pass);
             if(user) {
-                currentUser = user;
-                document.getElementById('screen-login').classList.add('hidden');
-                if(user.role === 'admin') {
-                    document.getElementById('app-admin').classList.remove('hidden'); renderAdmin();
-                } else {
-                    document.getElementById('app-driver').classList.remove('hidden');
-                    document.getElementById('d-name-disp').innerText = `担当: ${user.name} さん`; initDriver();
+                currentUser = user; document.getElementById('screen-login').classList.add('hidden');
+                if(user.role === 'admin' || user.role === 'manager') { 
+                    document.getElementById('app-admin').classList.remove('hidden'); switchPage('dashboard'); 
+                } else { 
+                    document.getElementById('app-driver').classList.remove('hidden'); initDriver(); 
                 }
-            } else alert('Login Failed'); // ログイン画面は英語の世界観なのでここは英語で
+            } else alert('ログイン失敗: ユーザーが見つかりません');
         }
 
-        function renderAdmin() {
-            const vs = JSON.parse(localStorage.getItem('sys_v18_vehicles'));
-            document.getElementById('adm-running').innerText = vs.filter(v => v.status === 'running').length;
-            const tbody = document.querySelector('#adm-table tbody'); tbody.innerHTML = '';
-            vs.forEach(v => {
-                const st = v.status === 'running' ? '<b style="color:var(--neon-green)">稼働中</b>' : '<span style="color:var(--text-sub)">待機中</span>';
-                tbody.innerHTML += `<tr><td>${v.no}</td><td>${v.name}</td><td>${st}</td><td>${v.lastOdo} km</td></tr>`;
+        function switchPage(page) {
+            document.querySelectorAll('.page-section').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            document.getElementById('page-' + page).classList.remove('hidden');
+            if(page==='dashboard') document.getElementById('nav-dash').classList.add('active');
+            if(page==='vehicles') document.getElementById('nav-vehicles').classList.add('active');
+            if(page==='maint') document.getElementById('nav-maint').classList.add('active');
+            if(page==='users') document.getElementById('nav-users').classList.add('active');
+            if(page==='export') document.getElementById('nav-export').classList.add('active');
+            refreshAllViews();
+        }
+
+        function updateExportOptions() {
+            const carSel = document.getElementById('ex-car');
+            const drvSel = document.getElementById('ex-driver');
+            carSel.innerHTML = '<option value="">全車両</option>';
+            drvSel.innerHTML = '<option value="">全員</option>';
+            localData.vehicles.forEach(v => { carSel.innerHTML += `<option value="${v.no}">${v.no} (${v.name})</option>`; });
+            localData.users.forEach(u => { drvSel.innerHTML += `<option value="${u.name}">${u.name}</option>`; });
+        }
+
+        function updateDashboard() {
+            const today = new Date(); const alertList = [];
+            document.getElementById('val-running').innerText = localData.vehicles.filter(v => v.status === 'running').length;
+            document.getElementById('val-total').innerText = localData.vehicles.length;
+            const checkDate = (dateStr, title, msg) => {
+                if(!dateStr) return; const limit = new Date(dateStr); const diff = Math.ceil((limit - today)/86400000);
+                if(diff < 0) alertList.push({type:'critical', title, msg: `${msg} 期限切れ`});
+                else if(diff <= 30) alertList.push({type:'warning', title, msg: `${msg} 残り${diff}日`});
+            };
+            localData.vehicles.forEach(v => { checkDate(v.shaken,'車検',v.no); checkDate(v.tenken3,'3ヶ月点検',v.no); });
+            localData.users.forEach(u => checkDate(u.license,'免許',u.name));
+            document.getElementById('val-alert').innerText = alertList.length;
+            const con = document.getElementById('dashboard-alerts'); con.innerHTML = '';
+            alertList.forEach(a => { const c = a.type==='critical'?'var(--alert-critical)':'var(--alert-warning)'; con.innerHTML += `<div class="alert-card" style="border-left-color:${c}"><strong style="color:${c}">${a.title}</strong><br>${a.msg}</div>`; });
+        }
+
+        function downloadCSV() {
+            if(!localData.reports || localData.reports.length === 0) return alert("日報データがありません");
+            const fStart = document.getElementById('ex-start').value;
+            const fEnd = document.getElementById('ex-end').value;
+            const fCar = document.getElementById('ex-car').value;
+            const fDriver = document.getElementById('ex-driver').value;
+            const filtered = localData.reports.filter(r => {
+                const d = formatDate(r.date); // Use safe date
+                if(fStart && d < fStart) return false;
+                if(fEnd && d > fEnd) return false;
+                if(fCar && r.carNo !== fCar) return false;
+                if(fDriver && r.driver !== fDriver) return false;
+                return true;
+            });
+            if(filtered.length === 0) return alert("条件に一致するデータがありません");
+            const csvHeader = [ '使用日(月/日)', '車番', '車種', '社用車備付品携行品有無', '出発時間', '帰社時間', '運転時間', '使用者（同乗者）', '行き先', '目的', 'ｵﾄﾞﾒｰﾀｰ', '走行距離', 'ｴﾝｼﾞﾝ異音', 'ﾌﾞﾚｰｷ点検', 'ｳｲﾝｶｰ点検', 'ﾗｲﾄ 点灯', 'ﾜｲﾊﾟｰ', 'ﾀｲﾔ', 'その他' ];
+            const csvRows = [csvHeader.join(',')];
+            filtered.forEach(r => {
+                const row = [ formatDate(r.date), r.carNo, r.carName, '有', r.startTime, r.endTime, r.driveTime ? r.driveTime + 'H' : '', r.passenger ? `${r.driver} (${r.passenger})` : r.driver, r.destination, r.purpose, r.endOdo, r.distance, r.checkEngine ? 'レ' : '×', r.checkBrake ? 'レ' : '×', r.checkBlinker ? 'レ' : '×', r.checkLight ? 'レ' : '×', r.checkWiper ? 'レ' : '×', r.checkTire ? 'レ' : '×', '' ];
+                csvRows.push(row.map(v => `"${v}"`).join(','));
+            });
+            const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csvRows.join('\n')], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = `運転日報_${new Date().toISOString().slice(0,10)}.csv`; a.click();
+        }
+
+        // CRUD
+        function renderVehicles() {
+            const tb = document.querySelector('#table-vehicles tbody'); tb.innerHTML = '';
+            localData.vehicles.forEach((v, i) => {
+                const st = v.status==='running' ? '<b class="badge-run">稼働中</b>' : '待機中';
+                tb.innerHTML += `<tr><td><b>${v.no}</b><br>${v.name}</td><td>${v.assetType}</td><td>${st}</td><td>${v.lastOdo} km</td><td><button class="btn-mini btn-del" onclick="delVehicle(${i})">削除</button></td></tr>`;
             });
         }
+        function addVehicle() {
+            const no = document.getElementById('reg-v-no').value; const name = document.getElementById('reg-v-name').value;
+            if(!no || !name) return alert('必須項目を入力してください');
+            const newV = { id: 'v'+Date.now(), no, name, assetType: document.getElementById('reg-v-type').value, lastOdo: 0, shaken: '', tenken3: '', tenken12: '', tenkenLease: '', tireS: '', tireW: '', battery: '', status: 'standby' };
+            localData.vehicles.push(newV);
+            saveAction({ action: 'update', vehicles: localData.vehicles, users: localData.users });
+        }
+        function delVehicle(i) { if(confirm('削除しますか？')){ localData.vehicles.splice(i,1); saveAction({ action: 'update', vehicles: localData.vehicles, users: localData.users }); } }
+
+        function renderMaintenance() {
+            const tb = document.querySelector('#table-maint tbody'); tb.innerHTML = '';
+            localData.vehicles.forEach((v, i) => {
+                let planHtml = '';
+                if(v.tenken3) planHtml += `<div class="td-data-item"><span class="td-label">3ヶ月</span>${formatDate(v.tenken3)}</div>`;
+                if(v.tenken12) planHtml += `<div class="td-data-item"><span class="td-label">12ヶ月</span>${formatDate(v.tenken12)}</div>`;
+                if(v.tenkenLease) planHtml += `<div class="td-data-item"><span class="td-label">リース</span>${formatDate(v.tenkenLease)}</div>`;
+                if(!planHtml) planHtml = '<span class="td-empty">-</span>';
+                let partHtml = '';
+                if(v.tireS) partHtml += `<div class="td-data-item"><span class="td-label">夏タイヤ</span>${formatDate(v.tireS)}</div>`;
+                if(v.tireW) partHtml += `<div class="td-data-item"><span class="td-label">冬タイヤ</span>${formatDate(v.tireW)}</div>`;
+                if(v.battery) partHtml += `<div class="td-data-item"><span class="td-label">バッテリー</span>${formatDate(v.battery)}</div>`;
+                if(!partHtml) partHtml = '<span class="td-empty">-</span>';
+                tb.innerHTML += `<tr><td><b>${v.no}</b><br>${v.name}</td><td>${formatDate(v.shaken) || '<span class="td-empty">-</span>'}</td><td>${planHtml}</td><td>${partHtml}</td><td><button class="btn-edit" onclick="openMaintModal(${i})">✏️ 編集</button></td></tr>`;
+            });
+        }
+        
+        function openMaintModal(i) {
+            editTargetIndex = i; const v = localData.vehicles[i];
+            document.getElementById('modal-maint-title').innerText = `${v.no} (${v.name})`;
+            document.getElementById('edt-shaken').value = formatDate(v.shaken);
+            document.getElementById('edt-tenken3').value = formatDate(v.tenken3);
+            document.getElementById('edt-tenken12').value = formatDate(v.tenken12);
+            document.getElementById('edt-tenkenLease').value = formatDate(v.tenkenLease);
+            document.getElementById('edt-tireS').value = formatDate(v.tireS);
+            document.getElementById('edt-tireW').value = formatDate(v.tireW);
+            document.getElementById('edt-battery').value = formatDate(v.battery);
+            document.getElementById('modal-maint').classList.remove('hidden');
+        }
+        function saveMaintFromModal() {
+            if(editTargetIndex === -1) return;
+            const v = localData.vehicles[editTargetIndex];
+            v.shaken = document.getElementById('edt-shaken').value;
+            v.tenken3 = document.getElementById('edt-tenken3').value;
+            v.tenken12 = document.getElementById('edt-tenken12').value;
+            v.tenkenLease = document.getElementById('edt-tenkenLease').value;
+            v.tireS = document.getElementById('edt-tireS').value;
+            v.tireW = document.getElementById('edt-tireW').value;
+            v.battery = document.getElementById('edt-battery').value;
+            document.getElementById('modal-maint').classList.add('hidden');
+            saveAction({ action: 'update', vehicles: localData.vehicles, users: localData.users });
+        }
+
+        // Users
+        function renderUsers() {
+            const tb = document.querySelector('#table-users tbody'); tb.innerHTML = '';
+            localData.users.forEach((u, i) => { 
+                tb.innerHTML += `<tr><td>${u.name}</td><td>${u.email}</td><td>${u.role}</td><td>${formatDate(u.license)}</td><td><button class="btn-edit" onclick="editUser(${i})">✏️ 編集</button><button class="btn-mini btn-del" onclick="delUser(${i})">削除</button></td></tr>`; 
+            });
+        }
+        function editUser(i) {
+            editingUserIdx = i; const u = localData.users[i];
+            document.getElementById('reg-u-name').value = u.name;
+            document.getElementById('reg-u-email').value = u.email;
+            document.getElementById('reg-u-pass').value = u.pass;
+            document.getElementById('reg-u-role').value = u.role;
+            document.getElementById('reg-u-license').value = formatDate(u.license);
+            const btn = document.getElementById('btn-user-save');
+            btn.innerText = "🔄 ユーザー情報を更新"; btn.style.backgroundColor = "#F59E0B"; 
+        }
+        function addUser() {
+            const name = document.getElementById('reg-u-name').value; const email = document.getElementById('reg-u-email').value; const pass = document.getElementById('reg-u-pass').value;
+            if(!name || !email) return alert('必須項目を入力してください');
+            const newUser = { name, email, pass, role: document.getElementById('reg-u-role').value, license: document.getElementById('reg-u-license').value };
+            if(editingUserIdx >= 0) {
+                localData.users[editingUserIdx] = newUser; editingUserIdx = -1;
+                const btn = document.getElementById('btn-user-save'); btn.innerText = "＋ ユーザーを追加"; btn.style.backgroundColor = "var(--primary-blue)";
+                alert('ユーザー情報を更新しました');
+            } else {
+                localData.users.push(newUser); alert('ユーザーを登録しました');
+            }
+            document.getElementById('reg-u-name').value = ''; document.getElementById('reg-u-email').value = '';
+            document.getElementById('reg-u-pass').value = '1234'; document.getElementById('reg-u-license').value = '';
+            saveAction({ action: 'update', vehicles: localData.vehicles, users: localData.users });
+        }
+        function delUser(i) { if(confirm('削除しますか？')){ localData.users.splice(i,1); saveAction({ action: 'update', vehicles: localData.vehicles, users: localData.users }); } }
 
         function initDriver() {
-            const vs = JSON.parse(localStorage.getItem('sys_v18_vehicles'));
-            const grid = document.getElementById('vehicle-grid-area'); grid.innerHTML = ''; 
-            vs.forEach(v => {
-                const btn = document.createElement('div');
-                btn.className = `vehicle-btn ${v.status === 'running' ? 'running' : ''}`;
-                const statusText = v.status === 'running' ? '（稼働中）' : '待機中';
-                // Truck Icon in button
-                const iconHtml = `<svg class="icon icon-glow-green" style="margin-bottom:5px;" viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>`;
-                btn.innerHTML = `${iconHtml}<div class="v-no">${v.no}</div><div class="v-name">${v.name}</div><div class="v-status">${statusText}</div>`;
-                btn.onclick = function() { if(v.status === 'running') return; selectVehicle(v.id); };
+            const grid = document.getElementById('vehicle-grid-area'); grid.innerHTML = '';
+            localData.vehicles.forEach(v => {
+                const btn = document.createElement('div'); btn.className = `vehicle-btn ${v.status==='running'?'running':''}`;
+                btn.innerHTML = `<div style="font-size:2rem;">🚚</div><div>${v.no}</div><div style="font-size:0.8rem;">${v.name}</div>`;
+                btn.onclick = () => { if(v.status!=='running') selectVehicle(v.id); };
                 grid.appendChild(btn);
             });
+            updateDatalists();
         }
-
-        function selectVehicle(vid) {
-            currentVehId = vid;
-            const vs = JSON.parse(localStorage.getItem('sys_v18_vehicles'));
-            const v = vs.find(val => val.id === currentVehId);
-            document.getElementById('d-last-odo-disp').innerText = v.lastOdo;
-            document.getElementById('d-start-odo').value = v.lastOdo;
-            document.getElementById('d-step-1').classList.add('hidden'); document.getElementById('d-step-2').classList.remove('hidden');
+        function updateDatalists() {
+            document.getElementById('list-dest').innerHTML = inputHistory.dests.map(v=>`<option value="${v}">`).join('');
+            document.getElementById('list-purp').innerHTML = inputHistory.purps.map(v=>`<option value="${v}">`).join('');
+            document.getElementById('list-pass').innerHTML = inputHistory.passes.map(v=>`<option value="${v}">`).join('');
+        }
+        function selectVehicle(vid) { 
+            currentVehId = vid; const v = localData.vehicles.find(val => val.id === vid); 
+            document.getElementById('d-last-odo-disp').innerText = v.lastOdo; 
+            document.getElementById('d-start-odo').value = v.lastOdo; 
+            document.getElementById('d-step-1').classList.add('hidden'); document.getElementById('d-step-2').classList.remove('hidden'); 
         }
         function backToStep1() { document.getElementById('d-step-2').classList.add('hidden'); document.getElementById('d-step-1').classList.remove('hidden'); }
-
+        
         function startWork() {
-            const input = parseInt(document.getElementById('d-start-odo').value);
-            const last = parseInt(document.getElementById('d-last-odo-disp').innerText);
-            if(input < last) return alert('エラー: 前回値より小さい数値は入力できません');
-            const vs = JSON.parse(localStorage.getItem('sys_v18_vehicles'));
-            const idx = vs.findIndex(v => v.id === currentVehId);
-            vs[idx].status = 'running'; localStorage.setItem('sys_v18_vehicles', JSON.stringify(vs));
-            document.getElementById('msg-safe').innerText = `${currentUser.name}さん、ご安全に！`;
-            document.getElementById('d-running-info').innerText = `${vs[idx].no} 走行中`;
+            const inputOdo = parseInt(document.getElementById('d-start-odo').value); 
+            const dest = document.getElementById('d-dest').value; const purp = document.getElementById('d-purp').value; const pass = document.getElementById('d-pass').value;
+            const idx = localData.vehicles.findIndex(v => v.id === currentVehId);
+            if(inputOdo < localData.vehicles[idx].lastOdo) return alert('エラー: 前回値より小さい数値は入力できません');
+            if(!dest || !purp) return alert('行き先と目的を入力してください');
+            if(!inputHistory.dests.includes(dest)) inputHistory.dests.push(dest);
+            if(!inputHistory.purps.includes(purp)) inputHistory.purps.push(purp);
+            if(pass && !inputHistory.passes.includes(pass)) inputHistory.passes.push(pass);
+            localStorage.setItem('fleet_history', JSON.stringify(inputHistory));
+            workStartTime = new Date();
+            currentWorkData = {
+                startOdo: inputOdo, destination: dest, purpose: purp, passenger: pass,
+                checkEngine: document.getElementById('chk-engine').checked, checkBrake: document.getElementById('chk-brake').checked, checkBlinker: document.getElementById('chk-blinker').checked, checkLight: document.getElementById('chk-light').checked, checkWiper: document.getElementById('chk-wiper').checked, checkTire: document.getElementById('chk-tire').checked
+            };
+            localData.vehicles[idx].status = 'running'; 
+            saveAction({ action: 'update', vehicles: localData.vehicles, users: localData.users }); 
+            document.getElementById('d-running-info').innerText = `${localData.vehicles[idx].no} 走行中`;
             document.getElementById('d-step-2').classList.add('hidden'); document.getElementById('d-step-driving').classList.remove('hidden');
         }
+        
+        function goToReturn() { 
+            document.getElementById('d-step-driving').classList.add('hidden'); 
+            document.getElementById('d-step-return').classList.remove('hidden'); 
+            openCamera('odo'); 
+            const now = new Date();
+            if(!workStartTime) workStartTime = new Date(now.getTime() - (60*60*1000));
+            const diffMs = now - workStartTime;
+            const hours = diffMs / (1000 * 60 * 60);
+            const rounded = Math.round(hours * 10) / 10; 
+            document.getElementById('d-drive-time').value = rounded;
+        }
+        function calcDist() { const s = currentWorkData.startOdo; const e = parseInt(document.getElementById('d-end-odo').value)||0; document.getElementById('d-dist-val').innerText = Math.max(0, e-s); }
+        async function endWork() {
+            const endOdo = document.getElementById('d-end-odo').value; const driveTime = document.getElementById('d-drive-time').value;
+            if(!endOdo) return alert('入力してください');
+            const idx = localData.vehicles.findIndex(v => v.id === currentVehId);
+            const v = localData.vehicles[idx];
+            const distance = parseInt(endOdo) - currentWorkData.startOdo;
+            const endTime = new Date();
+            const reportData = {
+                date: new Date().toISOString().slice(0,10), carNo: v.no, carName: v.name, driver: currentUser.name,
+                startTime: workStartTime.toTimeString().slice(0,5), endTime: endTime.toTimeString().slice(0,5), driveTime: driveTime,
+                destination: currentWorkData.destination, purpose: currentWorkData.purpose, passenger: currentWorkData.passenger,
+                startOdo: currentWorkData.startOdo, endOdo: parseInt(endOdo), distance: distance,
+                checkEngine: currentWorkData.checkEngine, checkBrake: currentWorkData.checkBrake, checkBlinker: currentWorkData.checkBlinker, checkLight: currentWorkData.checkLight, checkWiper: currentWorkData.checkWiper, checkTire: currentWorkData.checkTire
+            };
+            const vehicleUpdate = { id: v.id, status: 'standby', lastOdo: parseInt(endOdo) };
+            await saveAction({ action: 'report', reportData: reportData, vehicleData: vehicleUpdate });
+            document.getElementById('d-step-return').classList.add('hidden'); document.getElementById('d-step-end').classList.remove('hidden'); setTimeout(() => { location.reload(); }, 3000);
+        }
 
-        function goToReturn() { document.getElementById('d-step-driving').classList.add('hidden'); document.getElementById('d-step-return').classList.remove('hidden'); }
-        function backToDriving() { document.getElementById('d-step-return').classList.add('hidden'); document.getElementById('d-step-driving').classList.remove('hidden'); }
-
-        async function startWebRTC() {
-            try {
-                const video = document.getElementById('camera-stream');
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-                videoStream = stream; video.srcObject = stream;
-                document.getElementById('cam-placeholder').classList.add('hidden');
-                document.getElementById('shutter-btn').classList.remove('hidden');
-                document.getElementById('guide-overlay').classList.remove('hidden');
-            } catch (err) { alert('カメラ起動エラー: ' + err.name); }
+        async function openCamera(type) {
+            const vid = document.getElementById(type === 'defect' ? 'vid-defect' : 'vid-odo');
+            const box = document.getElementById(type === 'defect' ? 'box-defect' : '');
+            if(box) box.classList.remove('hidden');
+            try { const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }); vid.srcObject = s; vid.play(); } 
+            catch(e) { alert('カメラ起動エラー: ' + e.message); }
         }
-        function takeSnapshot() {
-            const video = document.getElementById('camera-stream');
-            const canvas = document.getElementById('canvas-snap');
-            canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-            canvas.getContext('2d').drawImage(video, 0, 0);
-            document.getElementById('captured-image').src = canvas.toDataURL('image/png');
-            document.getElementById('captured-image').classList.remove('hidden');
-            if(videoStream) videoStream.getTracks().forEach(t => t.stop());
-            document.getElementById('shutter-btn').classList.add('hidden');
-            document.getElementById('guide-overlay').classList.add('hidden');
-            document.getElementById('retake-btn').classList.remove('hidden');
-            isOdoPhotoTaken = true;
+        function snap(type) {
+            const vid = document.getElementById(type === 'defect' ? 'vid-defect' : 'vid-odo');
+            const img = document.getElementById(type === 'defect' ? 'img-defect' : 'img-odo');
+            const cvs = document.getElementById('canvas-work'); cvs.width = vid.videoWidth; cvs.height = vid.videoHeight;
+            cvs.getContext('2d').drawImage(vid, 0, 0); img.src = cvs.toDataURL('image/png'); img.classList.remove('hidden');
+            if(vid.srcObject) vid.srcObject.getTracks().forEach(t => t.stop());
         }
-        function retakePhoto() {
-            document.getElementById('captured-image').classList.add('hidden');
-            document.getElementById('retake-btn').classList.add('hidden');
-            startWebRTC(); isOdoPhotoTaken = false;
-        }
-
-        function endWork() {
-            if(!isOdoPhotoTaken) return alert('オドメーターの写真を撮影してください');
-            const endOdo = document.getElementById('d-end-odo').value;
-            if(!endOdo) return alert('数値を入力してください');
-            const vs = JSON.parse(localStorage.getItem('sys_v18_vehicles'));
-            const idx = vs.findIndex(v => v.id === currentVehId);
-            vs[idx].status = 'standby'; vs[idx].lastOdo = parseInt(endOdo);
-            localStorage.setItem('sys_v18_vehicles', JSON.stringify(vs));
-            document.getElementById('msg-goodjob').innerText = `${currentUser.name}さん\nお疲れ様でした`;
-            document.getElementById('d-step-return').classList.add('hidden');
-            document.getElementById('d-step-end').classList.remove('hidden');
-            setTimeout(() => { location.reload(); }, 3000);
-        }
-        function toggleReportModal(show) { document.getElementById('modal-report').classList.toggle('hidden', !show); }
-        function submitReport() { alert('送信しました'); toggleReportModal(false); }
+        function resetCam(type) { document.getElementById(type === 'defect' ? 'img-defect' : 'img-odo').classList.add('hidden'); openCamera(type); }
     </script>
 </body>
 </html>
